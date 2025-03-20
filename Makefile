@@ -1,5 +1,4 @@
 CC      = gcc
-CFLAGS	= -O0
 WFLAGS	= -std=c11 -Wall -Wextra -g
 LDFLAGS	= -lm
 
@@ -7,7 +6,7 @@ TARGETS	= tiny_md viz
 SOURCES	= $(shell echo *.c)
 OBJECTS = core.o wtime.o
 
-all: $(TARGETS)
+all: tiny_md
 
 viz: viz.o $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -lGL -lGLU -lglut
