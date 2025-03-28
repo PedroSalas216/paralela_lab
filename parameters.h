@@ -10,6 +10,7 @@
 
 #include <time.h> // time(NULL)
 
+// [108, 256, 500, 864, 1372, 2048, 2916, 4000, 5324, 6912, 8788]
 
 #ifndef N // número de particulas (debe ser un 4m^3 para el cristal inicial)
 #define N 256
