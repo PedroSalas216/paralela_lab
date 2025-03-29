@@ -102,6 +102,7 @@ int main()
     
     printf("# fs/(sec*N) = %f\n", ((1.6 * t)/N)/elapsed);
     printf("# (ps*N)/sec = %f\n", ((1.6 * 1000* t)*N)/elapsed);
+    printf("prueba de metrica: %f\n", N*N/elapsed);
 
     // Cierre de archivos
     fclose(file_thermo);

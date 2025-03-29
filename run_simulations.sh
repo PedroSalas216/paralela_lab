@@ -31,7 +31,7 @@ for((i=1; i <= num_iterations; i++)); do
     cat $temp_file >> $output_file
 done
 
-rm $temp_file
+rm $temp_file $temp_file_tmd
 
 # CSV header
 echo "N value, Iteration number, Number of instructions, Ins per cycle, Percentage of misses, Seconds time elapsed, Fs per particle per second" > "$csv_file"
@@ -68,9 +68,10 @@ do
         misses=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')
     fi
 
-    if [[ $line =~ \#\ fs/\(sec\*N\)\ =\ ([0-9]+\.[0-9]+) ]]; then
-    fs_per_particle_over_sec=${BASH_REMATCH[1]}
-    echo "Valor encontrado: $fs_per_particle_over_sec"
+    # "prueba de metrica: %f\n"
+    if [[ $line =~ prueba\ de\ metrica:\ ([0-9]+\.[0-9]+) ]]; then
+    metrica=${BASH_REMATCH[1]}
+    echo "Valor encontrado: $metrica"
     fi
 
     # Extraer tiempo de ejecución
@@ -78,10 +79,10 @@ do
         time_elapsed=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')  # Cambiar coma por punto
         
         # Debug para ver si las variables tienen valores
-        echo "DEBUG: $n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed, $fs_per_particle_over_sec"
+        echo "DEBUG: $n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed"
 
         # Escribir datos en CSV
-        echo "$n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed, $fs_per_particle_over_sec" >> "$csv_file"
+        echo "$n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed" >> "$csv_file"
     fi
 
 done < "$output_file"
