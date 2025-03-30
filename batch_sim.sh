@@ -2,16 +2,6 @@
 
 # "Uso: run_simulations <valor_de_N> <_opt_:num_iterations> <_opt_:compiler> <_opt_:"flags">"
 
-# # 4000 2916 2948 1372 ( 864 500 256 108)
-declare -A vals_n
-vals_n["108"]="2"
-vals_n["256"]="1"
-vals_n["500"]="0"
-vals_n["864"]="0"
-
-# compiler="gcc"
-# flags="-O0"
-
 simulate (){
     if [ -z $1 ]; then
         cmp="gcc"
@@ -40,6 +30,21 @@ simulate (){
     # python3 plotter.py resultados/data_"$cmp""$flg".csv
 }
 
-simulate "gcc" "-O3 -march=native"
-# simulate clang "-O3 -march=native"
+# # 4000 2916 2948 1372 ( 864 500 256 108)
+declare -A vals_n
+vals_n["108"]="5"
+vals_n["256"]="3"
+vals_n["500"]="2"
+vals_n["864"]="1"
+vals_n["1372"]="1"
+vals_n["2048"]="0"
+vals_n["2916"]="0"
+vals_n["4000"]="1"
+vals_n["5324"]="0"
+
+# ==== aca configura cada simulacion ==== 
+# simulate compilador "flags"
+simulate gcc "-O3 -march=native"
+
+# ==== fin simulación ====
 make clean
