@@ -12,7 +12,7 @@ void init_pos(float* rxyz, const float rho)
     // inicialización de las posiciones de los átomos en un cristal FCC
 
     float a = cbrt(4.0 / rho);
-    int nucells = ceil(cbrt((float)N / 4.0));
+    int nucells = round(cbrt((float)N / 4.0));
     int idx = 0;
 
     for (int i = 0; i < nucells; i++) {
