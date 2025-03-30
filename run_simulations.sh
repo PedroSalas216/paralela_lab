@@ -39,10 +39,10 @@ normalized_flags=$(normalize_name "$cflags")
 
 
 # Archivos
-temp_file="resultados/temp_perf_stat$1-$cc$normalized_flags.log"
-temp_file_tmd="resultados/temp_tiny_md$1-$cc$normalized_flags.log"
-output_file="resultados/logs_$1-$cc$normalized_flags.log"
-csv_file="resultados/data_$cc$normalized_flags.csv"
+temp_file="temp_perf_stat$1-$cc$normalized_flags.log"
+temp_file_tmd="temp_tiny_md$1-$cc$normalized_flags.log"
+output_file="resultados/logs/logs_$1-$cc$normalized_flags.log"
+csv_file="resultados/csv/data_$cc$normalized_flags.csv"
 
 # Compilación 
 make clean

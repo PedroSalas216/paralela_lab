@@ -4,7 +4,7 @@
 
 # # 4000 2916 2948 1372 ( 864 500 256 108)
 declare -A vals_n
-vals_n["108"]="3"
+vals_n["108"]="2"
 vals_n["256"]="1"
 vals_n["500"]="0"
 vals_n["864"]="0"
@@ -37,9 +37,9 @@ simulate (){
     
     flg=$(normalize_name "$flg") 
 
-    python3 plotter.py resultados/data_"$cmp""$flg".csv
+    # python3 plotter.py resultados/data_"$cmp""$flg".csv
 }
 
 simulate "gcc" "-O3 -march=native"
-simulate clang "-O3 -march=native"
+# simulate clang "-O3 -march=native"
 make clean

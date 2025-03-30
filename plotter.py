@@ -42,4 +42,4 @@ plt.grid(axis="y", linestyle="--", alpha=0.7)  # Líneas horizontales
 # Mostrar la gráfica
 archivo= archivo_csv.split(".") # [data_compiler-cflags, csv]
 archivo= archivo[0].split("_") # [data, compiler-flags]
-plt.savefig("graficos/"+ archivo[1]+".png")
+plt.savefig("resultados/graficos/"+ archivo[1]+".png")
