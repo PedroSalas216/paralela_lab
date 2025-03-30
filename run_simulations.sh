@@ -1,16 +1,26 @@
 #!/bin/bash
 
 
-if [ $# -eq 0 ]; then
+if [ -z $1 ]; then
     echo "Error: Debes proporcionar un valor para N."
-    echo "Uso: $0 <valor_de_N>"
+    echo "Uso: $0 <valor_de_N> <_opt_:num_iterations> <_opt_:compiler>"
     exit 1
+fi
+
+if [ -z $2 ]; then 
+    num_iterations=1
+else 
+    num_iterations=$2
+fi
+if [ -z "$3" ]; then 
+    cc="gcc"
+else 
+    cc=$3
 fi
 
 
 # Initialize variables
-cflags="-O1 -march=native"
-num_iterations=1
+cflags="-O3 -march=native"
 
 # Archivos
 temp_file="resultados/temp$1.log"
@@ -20,7 +30,7 @@ csv_file="resultados/resultados_slurm$1.csv"
 
 # Compilación 
 make clean
-make tiny_md CPPFLAGS="-DN=$1" CFLAGS="$cflags"
+make tiny_md CPPFLAGS="-DN=$1" CFLAGS="$cflags" CC="$cc"
 
 # Ejecución del código
 for((i=1; i <= num_iterations; i++)); do
@@ -34,7 +44,7 @@ done
 rm $temp_file $temp_file_tmd
 
 # CSV header
-echo "N value, Iteration number, Number of instructions, Ins per cycle, Percentage of misses, Seconds time elapsed, Fs per particle per second" > "$csv_file"
+echo "N value, Iteration number, Number of instructions, Ins per cycle, Percentage of misses, Seconds time elapsed, Metrica" > "$csv_file"
 
 # Convertir comas a puntos y eliminar puntos separadores de miles
 normalize_number() {
@@ -79,10 +89,9 @@ do
         time_elapsed=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')  # Cambiar coma por punto
         
         # Debug para ver si las variables tienen valores
-        echo "DEBUG: $n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed"
-
+        # echo "DEBUG: $n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed,$metrica"
         # Escribir datos en CSV
-        echo "$n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed" >> "$csv_file"
+        echo "$n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed,$metrica" >> "$csv_file"
     fi
 
 done < "$output_file"
