@@ -10,8 +10,13 @@ fi
 if [ -z $2 ]; then 
     num_iterations=1
 else 
-    num_iterations=$2
+    if [ $2 -eq 0 ]; then
+        exit 0
+    else 
+        num_iterations=$2
+    fi
 fi
+
 if [ -z "$3" ]; then 
     cc="gcc"
  else 
