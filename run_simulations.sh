@@ -3,7 +3,7 @@
 
 if [ -z $1 ]; then
     echo "Error: Debes proporcionar un valor para N."
-    echo "Uso: $0 <valor_de_N> <_opt_:num_iterations> <_opt_:compiler>"
+    echo "Uso: $0 <valor_de_N> <_opt_:num_iterations> <_opt_:compiler> <_opt_:"flags">"
     exit 1
 fi
 
@@ -14,19 +14,30 @@ else
 fi
 if [ -z "$3" ]; then 
     cc="gcc"
-else 
+ else 
     cc=$3
 fi
 
+if [ -z "$4" ]; then 
+    cflags="-O3 -march=native"
+else 
+    cflags=$4
+fi
 
-# Initialize variables
-cflags="-O3 -march=native"
+
+normalize_name(){
+    echo "$1" | tr -d ' \'
+}
+
+normalized_flags=$(normalize_name "$cflags") 
+
+
 
 # Archivos
-temp_file="resultados/temp$1.log"
-temp_file_tmd="resultados/temp_tmd$1.log"
-output_file="resultados/resultados_slurm$1.log"
-csv_file="resultados/resultados_slurm$1.csv"
+temp_file="resultados/temp_perf_stat$1-$cc$normalized_flags.log"
+temp_file_tmd="resultados/temp_tiny_md$1-$cc$normalized_flags.log"
+output_file="resultados/logs_$1-$cc$normalized_flags.log"
+csv_file="resultados/data_$cc$normalized_flags.csv"
 
 # Compilación 
 make clean
@@ -43,8 +54,12 @@ done
 
 rm $temp_file $temp_file_tmd
 
+
 # CSV header
-echo "N value, Iteration number, Number of instructions, Ins per cycle, Percentage of misses, Seconds time elapsed, Metrica" > "$csv_file"
+if [ ! -s "$csv_file" ]; then
+    echo "N value,Iteration number,Number of instructions,Ins per cycle,Percentage of misses,Seconds time elapsed,Metrica" > "$csv_file"
+fi
+#jecho "N value, Iteration number, Number of instructions, Ins per cycle, Percentage of misses, Seconds time elapsed, Metrica" > "$csv_file"
 
 # Convertir comas a puntos y eliminar puntos separadores de miles
 normalize_number() {

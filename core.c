@@ -84,13 +84,6 @@ static float minimum_image(float cordi, const float cell_length)
     cordi += cell_length * (cordi <= -half_cell_length);
     
     return cordi;
-
-    // if (cordi <= -0.5 * cell_length) {
-    //     cordi += cell_length;
-    // } else if (cordi > 0.5 * cell_length) {
-    //     cordi -= cell_length;
-    // }
-    // return cordi;
 }
 
 
