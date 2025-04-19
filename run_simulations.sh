@@ -31,7 +31,7 @@ fi
 
 
 normalize_name(){
-    echo "$1" | tr -d ' \'
+    echo "$1" | tr -d ' '
 }
 
 normalized_flags=$(normalize_name "$cflags") 
@@ -75,7 +75,7 @@ normalize_number() {
 while IFS= read -r line
 do
     # Extraer N
-    if [[ $line =~ ^N=\ ([0-9]+) ]]; then
+    if [[ $line =~ ^N=\ ([0-9]+) ]]; 
         n_value=${BASH_REMATCH[1]}
     fi
 

@@ -77,7 +77,7 @@ void init_vel(float* vxyz, float* temp, float* ekin)
 
 static float minimum_image(float cordi, const float cell_length)
 {
-    // imagen más cercana
+    
     const float half_cell_length = 0.5 * cell_length;
 
     cordi -= cell_length * (cordi > half_cell_length);
