@@ -84,20 +84,28 @@ static float minimum_image(float cordi, const float cell_length)
 }
 
 #pragma GCC optimize("tree-vectorize")
-void forces(const Positions* r, Forces* f, float* epot, float* pres, const float* temp, const float rho, const float V, const float L)
+void forces(const Positions* __restrict__ r, Forces* __restrict__ f, float* __restrict__ epot, float* __restrict__ pres, 
+            const float* __restrict__ temp, const float rho, const float V, const float L)
 {
-    memset(f->fx, 0, N * sizeof(float));
-    memset(f->fy, 0, N * sizeof(float));
-    memset(f->fz, 0, N * sizeof(float));
+    #pragma GCC ivdep
+    for (int i = 0; i < N; i++) {
+        f->fx[i] = 0.0f;
+        f->fy[i] = 0.0f;
+        f->fz[i] = 0.0f;
+    }
 
-    float pres_vir = 0.0;
+    float pres_vir = 0.0f;
     const float rcut2 = RCUT * RCUT;
-    *epot = 0.0;
+    *epot = 0.0f;
 
+    #pragma GCC ivdep
     for (int i = 0; i < N-1; i++) {
         float xi = r->x[i];
         float yi = r->y[i];
         float zi = r->z[i];
+        float fxi = 0.0f;
+        float fyi = 0.0f;
+        float fzi = 0.0f;
 
         for (int j = i + 1; j < N; j++) {
             float rx = xi - r->x[j];
@@ -111,24 +119,27 @@ void forces(const Positions* r, Forces* f, float* epot, float* pres, const float
             float rij2 = rx * rx + ry * ry + rz * rz;
 
             if (rij2 <= rcut2) {
-                float r2inv = 1.0 / rij2;
+                float r2inv = 1.0f / rij2;
                 float r6inv = r2inv * r2inv * r2inv;
-                float fr = 24.0 * r2inv * r6inv * (2.0 * r6inv - 1.0);
+                float fr = 24.0f * r2inv * r6inv * (2.0f * r6inv - 1.0f);
 
-                f->fx[i] += fr * rx;
-                f->fy[i] += fr * ry;
-                f->fz[i] += fr * rz;
+                fxi += fr * rx;
+                fyi += fr * ry;
+                fzi += fr * rz;
 
                 f->fx[j] -= fr * rx;
                 f->fy[j] -= fr * ry;
                 f->fz[j] -= fr * rz;
 
-                *epot += 4.0 * r6inv * (r6inv - 1.0) - ECUT;
+                *epot += 4.0f * r6inv * (r6inv - 1.0f) - ECUT;
                 pres_vir += fr * rij2;
             }
         }
+        f->fx[i] += fxi;
+        f->fy[i] += fyi;
+        f->fz[i] += fzi;
     }
-    pres_vir /= (V * 3.0);
+    pres_vir /= (V * 3.0f);
     *pres = *temp * rho + pres_vir;
 }
 
@@ -142,40 +153,43 @@ static float pbc(float cordi, const float cell_length)
     return cordi;
 }
 #pragma GCC optimize("tree-vectorize")
-void velocity_verlet(Positions* r, Velocities* v, Forces* f, float* epot, float* ekin, float* pres, float* temp, const float rho, const float V, const float L)
+void velocity_verlet(Positions* __restrict__ r, Velocities* __restrict__ v, 
+                    Forces* __restrict__ f, float* __restrict__ epot, 
+                    float* __restrict__ ekin, float* __restrict__ pres, 
+                    float* __restrict__ temp, const float rho, const float V, const float L)
 {
 
     for (int i = 0; i < N; i++) {
-        // Actualizar posiciones
-        r->x[i] += v->vx[i] * DT + 0.5 * f->fx[i] * DT * DT;
-        r->y[i] += v->vy[i] * DT + 0.5 * f->fy[i] * DT * DT;
-        r->z[i] += v->vz[i] * DT + 0.5 * f->fz[i] * DT * DT;
+        // Primera parte: actualizar posiciones
+        float dt2_2 = 0.5f * DT * DT;
+        float x = r->x[i] + v->vx[i] * DT + f->fx[i] * dt2_2;
+        float y = r->y[i] + v->vy[i] * DT + f->fy[i] * dt2_2;
+        float z = r->z[i] + v->vz[i] * DT + f->fz[i] * dt2_2;
 
         // Aplicar PBC
-        r->x[i] = pbc(r->x[i], L);
-        r->y[i] = pbc(r->y[i], L);
-        r->z[i] = pbc(r->z[i], L);
+        r->x[i] = pbc(x, L);
+        r->y[i] = pbc(y, L);
+        r->z[i] = pbc(z, L);
 
-        // Primera parte de la actualización de velocidades
-        v->vx[i] += 0.5 * f->fx[i] * DT;
-        v->vy[i] += 0.5 * f->fy[i] * DT;
-        v->vz[i] += 0.5 * f->fz[i] * DT;
+        // Primera parte de velocidades
+        v->vx[i] += 0.5f * f->fx[i] * DT;
+        v->vy[i] += 0.5f * f->fy[i] * DT;
+        v->vz[i] += 0.5f * f->fz[i] * DT;
     }
 
-    // Actualizar fuerzas
     forces(r, f, epot, pres, temp, rho, V, L);
 
-    float sumv2 = 0.0;
-   
+    float sumv2 = 0.0f;
+    
     for (int i = 0; i < N; i++) {
-        // Segunda parte de la actualización de velocidades
-        v->vx[i] += 0.5 * f->fx[i] * DT;
-        v->vy[i] += 0.5 * f->fy[i] * DT;
-        v->vz[i] += 0.5 * f->fz[i] * DT;
-
+        // Segunda parte de velocidades
+        v->vx[i] += 0.5f * f->fx[i] * DT;
+        v->vy[i] += 0.5f * f->fy[i] * DT;
+        v->vz[i] += 0.5f * f->fz[i] * DT;
+        
         sumv2 += v->vx[i] * v->vx[i] + v->vy[i] * v->vy[i] + v->vz[i] * v->vz[i];
     }
 
-    *ekin = 0.5 * sumv2;
-    *temp = sumv2 / (3.0 * N);
+    *ekin = 0.5f * sumv2;
+    *temp = sumv2 / (3.0f * N);
 }

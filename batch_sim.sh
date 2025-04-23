@@ -44,7 +44,17 @@ vals_n["5324"]="0"
 
 # ==== aca configura cada simulacion ==== 
 # simulate compilador "flags"
-simulate gcc "-O3 -ffast-math -march=native -mtune=native -fopt-info-vec -fopt-info-vec-missed"
+# simulate gcc "-O3 -ffast-math -march=native -mtune=native -fopt-info-vec -fopt-info-vec-missed"
+
+simulate gcc "-O3 -march=native -mavx2 -mfma -ftree-vectorize -ffast-math -funroll-loops -fomit-frame-pointer -fno-math-errno -fno-signed-zeros -fno-trapping-math -ffinite-math-only -fopenmp-simd -fvect-cost-model=unlimited -fopt-info-vec"
+
+# gcc -O3 -march=native -mavx2 -mfma -ftree-vectorize \
+#     -ffast-math -funroll-loops -fomit-frame-pointer \
+#     -fno-math-errno -fno-signed-zeros \
+#     -fno-trapping-math -ffinite-math-only \
+#     -funsafe-math-optimizations -fassociative-math \
+#     -fopenmp-simd -fvect-cost-model=unlimited \
+#     -fopt-info-vec
 
 # ==== fin simulación ====
 make clean

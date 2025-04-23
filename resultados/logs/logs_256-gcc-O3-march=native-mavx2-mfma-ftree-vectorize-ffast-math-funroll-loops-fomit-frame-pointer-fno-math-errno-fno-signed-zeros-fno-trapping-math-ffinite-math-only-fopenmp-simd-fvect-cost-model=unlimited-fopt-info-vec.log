@@ -1,0 +1,39 @@
+N=256 - Iteration 1
+# Número de partículas:      256
+# Temperatura de referencia: 2.00
+# Pasos de equilibración:    500
+# Pasos de medición:         1500
+# (mediciones cada 10 pasos)
+# densidad, volumen, energía potencial media, presión media
+1.200000	213.333328	-1406.954956	28.825586
+1.100000	232.727264	-1518.649292	17.727125
+1.000000	256.000000	-1294.697266	15.165216
+0.900000	284.444458	-1285.806396	9.176282
+0.800000	320.000000	-1211.901733	5.368606
+0.700000	365.714294	-1103.484863	3.008861
+0.600000	426.666687	-960.447083	1.769924
+0.500000	512.000000	-803.433167	1.101884
+0.400000	640.000061	-646.731262	0.714131
+# Tiempo total de simulación = 7.251953 segundos
+# Tiempo simulado = 108.004066 [fs]
+prueba de metrica: 9037.013672
+# started on Wed Apr 23 10:09:00 2025
+
+
+ Performance counter stats for './tiny_md':
+
+          7.250,07 msec task-clock                       #    1,000 CPUs utilized             
+                66      context-switches                 #    9,103 /sec                      
+                 6      cpu-migrations                   #    0,828 /sec                      
+                81      page-faults                      #   11,172 /sec                      
+    25.976.701.454      cycles                           #    3,583 GHz                       
+    20.227.629.477      instructions                     #    0,78  insn per cycle            
+     5.083.601.466      branches                         #  701,180 M/sec                     
+       520.091.183      branch-misses                    #   10,23% of all branches           
+
+       7,249022426 seconds time elapsed
+
+       7,225431000 seconds user
+       0,025008000 seconds sys
+
+
