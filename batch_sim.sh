@@ -37,14 +37,14 @@ vals_n["256"]="1"
 vals_n["500"]="1"
 vals_n["864"]="1"
 vals_n["1372"]="0"
-vals_n["2048"]="1"
+vals_n["2048"]="0"
 vals_n["2916"]="0"
 vals_n["4000"]="0"
 vals_n["5324"]="0"
 
 # ==== aca configura cada simulacion ==== 
 # simulate compilador "flags"
-simulate gcc "-O3 -march=native"
+simulate gcc "-O3 -ffast-math -march=native -mtune=native -fopt-info-vec -fopt-info-vec-missed"
 
 # ==== fin simulación ====
 make clean

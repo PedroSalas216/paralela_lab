@@ -50,8 +50,8 @@ make tiny_md CPPFLAGS="-DN=$1" CFLAGS="$cflags" CC="$cc"
 
 # Ejecución del código
 for((i=1; i <= num_iterations; i++)); do
-    echo "N= $1 - Iteration $i"
-    echo "N= $1 - Iteration $i" >> $output_file
+    echo "N=$1 - Iteration $i"
+    echo "N=$1 - Iteration $i" >> $output_file
     perf stat -o $temp_file  ./tiny_md > $temp_file_tmd
     cat $temp_file_tmd >> $output_file
     cat $temp_file >> $output_file
@@ -71,11 +71,54 @@ normalize_number() {
     echo "$1" | tr -d '.' | tr ',' '.'
 }
 
+# # Extraer datos del archivo de salida
+# while IFS= read -r line
+# do
+#     # Extraer N
+#     if [[ $line =~ ^N=\([0-9]+) ]]; 
+#         n_value=${BASH_REMATCH[1]}
+#     fi
+
+#     # Extraer número de iteración
+#     if [[ $line =~ Iteration\ ([0-9]+) ]]; then
+#         iteration=${BASH_REMATCH[1]}
+#     fi
+
+#     # Extraer instrucciones y IPC
+#     if [[ $line =~ ([0-9]+\.[0-9]+\.[0-9]+)\ +instructions ]]; then
+#         raw_instructions=${BASH_REMATCH[1]}
+#         instructions=$(normalize_number "$raw_instructions")  # Quitar puntos de miles
+#     fi
+#     if [[ $line =~ ([0-9]+,[0-9]+)\ +insn\ per\ cycle ]]; then
+#         ins_per_cycle=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')  # Cambiar coma por punto
+#     fi
+
+#     # Extraer porcentaje de branch-misses
+#     if [[ $line =~ ([0-9]+,[0-9]+)%\ of\ all\ branches ]]; then
+#         misses=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')
+#     fi
+
+#     # "prueba de metrica: %f\n"
+#     if [[ $line =~ prueba\ de\ metrica:\ ([0-9]+\.[0-9]+) ]]; then
+#     metrica=${BASH_REMATCH[1]}
+#     echo "Valor encontrado: $metrica"
+#     fi
+
+#     # Extraer tiempo de ejecución
+#     if [[ $line =~ ([0-9]+,[0-9]+)\ seconds\ time\ elapsed ]]; then
+#         time_elapsed=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')  # Cambiar coma por punto
+        
+#         # Debug para ver si las variables tienen valores
+#         # echo "DEBUG: $n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed,$metrica"
+#         # Escribir datos en CSV
+#         echo "$n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed,$metrica" >> "$csv_file"
+#     fi
+
+# done < "$output_file"
 # Extraer datos del archivo de salida
-while IFS= read -r line
-do
+while IFS= read -r line; do
     # Extraer N
-    if [[ $line =~ ^N=\ ([0-9]+) ]]; 
+    if [[ $line =~ ^N=([0-9]+) ]]; then
         n_value=${BASH_REMATCH[1]}
     fi
 
@@ -98,20 +141,17 @@ do
         misses=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')
     fi
 
-    # "prueba de metrica: %f\n"
+    # Extraer métrica
     if [[ $line =~ prueba\ de\ metrica:\ ([0-9]+\.[0-9]+) ]]; then
-    metrica=${BASH_REMATCH[1]}
-    echo "Valor encontrado: $metrica"
+        metrica=${BASH_REMATCH[1]}
+        echo "Valor encontrado: $metrica"
     fi
 
     # Extraer tiempo de ejecución
     if [[ $line =~ ([0-9]+,[0-9]+)\ seconds\ time\ elapsed ]]; then
         time_elapsed=$(echo "${BASH_REMATCH[1]}" | tr ',' '.')  # Cambiar coma por punto
         
-        # Debug para ver si las variables tienen valores
-        # echo "DEBUG: $n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed,$metrica"
         # Escribir datos en CSV
         echo "$n_value,$iteration,$instructions,$ins_per_cycle,$misses,$time_elapsed,$metrica" >> "$csv_file"
     fi
-
 done < "$output_file"

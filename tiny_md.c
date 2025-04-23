@@ -1,25 +1,68 @@
 #define _XOPEN_SOURCE 500  // M_PI
-#include "core.h"
 #include "parameters.h"
 #include "wtime.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "core.h"
 
+// Función auxiliar para alocar memoria para las estructuras
+void allocate_memory(Positions* r, Velocities* v, Forces* f) {
+    r->x = (float*)malloc(N * sizeof(float));
+    r->y = (float*)malloc(N * sizeof(float));
+    r->z = (float*)malloc(N * sizeof(float));
+    
+    v->vx = (float*)malloc(N * sizeof(float));
+    v->vy = (float*)malloc(N * sizeof(float));
+    v->vz = (float*)malloc(N * sizeof(float));
+    
+    f->fx = (float*)malloc(N * sizeof(float));
+    f->fy = (float*)malloc(N * sizeof(float));
+    f->fz = (float*)malloc(N * sizeof(float));
+}
+
+// Función auxiliar para liberar memoria
+void free_memory(Positions* r, Velocities* v, Forces* f) {
+    free(r->x); free(r->y); free(r->z);
+    free(v->vx); free(v->vy); free(v->vz);
+    free(f->fx); free(f->fy); free(f->fz);
+}
+
+// Función auxiliar para reescalar velocidades
+void scale_velocities(Velocities* v, float sf) {
+    for (int i = 0; i < N; i++) {
+        v->vx[i] *= sf;
+        v->vy[i] *= sf;
+        v->vz[i] *= sf;
+    }
+}
+
+// Función auxiliar para reescalar posiciones
+void scale_positions(Positions* r, float sf) {
+    for (int i = 0; i < N; i++) {
+        r->x[i] *= sf;
+        r->y[i] *= sf;
+        r->z[i] *= sf;
+    }
+}
 
 int main()
 {
     FILE *file_xyz, *file_thermo;
     file_xyz = fopen("trajectory.xyz", "w");
     file_thermo = fopen("thermo.log", "w");
-    float Ekin, Epot, Temp, Pres; // variables macroscopicas
+    
+    float Ekin, Epot, Temp, Pres;
     float Rho, cell_V, cell_L, tail, Etail, Ptail;
-    float *rxyz, *vxyz, *fxyz; // variables microscopicas
-
-    rxyz = (float*)malloc(3 * N * sizeof(float));
-    vxyz = (float*)malloc(3 * N * sizeof(float));
-    fxyz = (float*)malloc(3 * N * sizeof(float));
+    
+    // Declaración de estructuras SoA
+    Positions r;
+    Velocities v;
+    Forces f;
+    
+    // Alocación de memoria
+    allocate_memory(&r, &v, &f);
 
     printf("# Número de partículas:      %d\n", N);
     printf("# Temperatura de referencia: %.2f\n", T0);
@@ -33,8 +76,9 @@ int main()
     float t = 0.0, sf;
     float Rhob;
     Rho = RHOI;
-    init_pos(rxyz, Rho);
+    init_pos(&r, Rho);
     float start = wtime();
+    
     for (int m = 0; m < 9; m++) {
         Rhob = Rho;
         Rho = RHOI - 0.1 * (float)m;
@@ -44,34 +88,27 @@ int main()
         Etail = tail * (float)N;
         Ptail = tail * Rho;
 
-        int i = 0;
         sf = cbrt(Rhob / Rho);
-        for (int k = 0; k < 3 * N; k++) { // reescaleo posiciones a nueva densidad
-            rxyz[k] *= sf;
-        }
-        init_vel(vxyz, &Temp, &Ekin);
-        forces(rxyz, fxyz, &Epot, &Pres, &Temp, Rho, cell_V, cell_L);
+        scale_positions(&r, sf);
+        
+        init_vel(&v, &Temp, &Ekin);
+        forces(&r, &f, &Epot, &Pres, &Temp, Rho, cell_V, cell_L);
 
-        for (i = 1; i < TEQ; i++) { // loop de equilibracion
-
-            velocity_verlet(rxyz, vxyz, fxyz, &Epot, &Ekin, &Pres, &Temp, Rho, cell_V, cell_L);
-
+        // Loop de equilibración
+        for (int i = 1; i < TEQ; i++) {
+            velocity_verlet(&r, &v, &f, &Epot, &Ekin, &Pres, &Temp, Rho, cell_V, cell_L);
             sf = sqrt(T0 / Temp);
-            for (int k = 0; k < 3 * N; k++) { // reescaleo de velocidades
-                vxyz[k] *= sf;
-            }
+            scale_velocities(&v, sf);
         }
 
+        // Loop de medición
         int mes = 0;
         float epotm = 0.0, presm = 0.0;
-        for (i = TEQ; i < TRUN; i++) { // loop de medicion
-
-            velocity_verlet(rxyz, vxyz, fxyz, &Epot, &Ekin, &Pres, &Temp, Rho, cell_V, cell_L);
-
+        for (int i = TEQ; i < TRUN; i++) {
+            velocity_verlet(&r, &v, &f, &Epot, &Ekin, &Pres, &Temp, Rho, cell_V, cell_L);
+            
             sf = sqrt(T0 / Temp);
-            for (int k = 0; k < 3 * N; k++) { // reescaleo de velocidades
-                vxyz[k] *= sf;
-            }
+            scale_velocities(&v, sf);
 
             if (i % TMES == 0) {
                 Epot += Etail;
@@ -83,8 +120,8 @@ int main()
 
                 fprintf(file_thermo, "%f %f %f %f %f\n", t, Temp, Pres, Epot, Epot + Ekin);
                 fprintf(file_xyz, "%d\n\n", N);
-                for (int k = 0; k < 3 * N; k += 3) {
-                    fprintf(file_xyz, "Ar %e %e %e\n", rxyz[k + 0], rxyz[k + 1], rxyz[k + 2]);
+                for (int k = 0; k < N; k++) {
+                    fprintf(file_xyz, "Ar %e %e %e\n", r.x[k], r.y[k], r.z[k]);
                 }
             }
 
@@ -96,21 +133,14 @@ int main()
     float elapsed = wtime() - start;
     printf("# Tiempo total de simulación = %f segundos\n", elapsed);
     printf("# Tiempo simulado = %f [fs]\n", t * 1.6);
-    // printf("# ns/day = %f\n", (1.6e-6 * t) / elapsed * 86400);
-    // //                       ^1.6 fs -> ns       ^sec -> day
-    // printf("# ns/day*particle = %f\n", (1.6e-6 * t)/(elapsed * 86400 * N));
-    
-    // printf("# fs/(sec*N) = %f\n", ((1.6 * t)/N)/elapsed);
-    // printf("# (ps*N)/sec = %f\n", ((1.6 * 1000* t)*N)/elapsed);
     printf("prueba de metrica: %f\n", N*N/elapsed);
 
     // Cierre de archivos
     fclose(file_thermo);
     fclose(file_xyz);
 
-    // Liberacion de memoria
-    free(rxyz);
-    free(fxyz);
-    free(vxyz);
+    // Liberación de memoria
+    free_memory(&r, &v, &f);
+    
     return 0;
 }
