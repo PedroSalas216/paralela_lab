@@ -1,6 +1,13 @@
 #ifndef CORE_H
 #define CORE_H
 
+
+typedef struct {
+    float* __restrict__ x __attribute__((aligned(32)));
+    float* __restrict__ y __attribute__((aligned(32)));
+    float* __restrict__ z __attribute__((aligned(32)));
+} Positions;
+
 typedef struct {
     float* x;
     float* y;
