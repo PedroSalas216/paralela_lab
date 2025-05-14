@@ -4,6 +4,7 @@
 #include <math.h>
 #include "parameters.h"
 #include <stdlib.h>
+#include <omp.h>
 
 #define ECUT (4.0 * (pow(RCUT, -12) - pow(RCUT, -6)))
 

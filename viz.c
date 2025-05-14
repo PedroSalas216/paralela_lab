@@ -1,7 +1,7 @@
 #define _XOPEN_SOURCE 500  // M_PI
 #include "core.h"
 #include "parameters.h"
-
+#include <immintrin.h>
 #include <GL/glut.h> // OpenGL
 #include <math.h>
 #include <stdio.h>
@@ -10,7 +10,12 @@
 // variables globales
 static float Ekin, Epot, Temp, Pres; // variables macroscopicas
 static float Rho, V, box_size, tail, Etail, Ptail;
-static float *rxyz, *vxyz, *fxyz; // variables microscopicas
+// static float *rxyz, *vxyz, *fxyz; // variables microscopicas
+
+static Positions r;
+static Velocities v;
+static Forces f;
+
 static float Rhob, sf, epotm, presm;
 static int switcher = 0, frames = 0, mes;
 
@@ -104,9 +109,12 @@ static void draw_atoms(void)
     float dz;
 
     for (di = 0; di < 3 * N; di += 3) {
-        dx = (rxyz[di + 0] / glL) * resize;
-        dy = (rxyz[di + 1] / glL) * resize;
-        dz = (rxyz[di + 2] / glL) * resize;
+        dx = (r.x[di] /glL) * resize;
+        dy = (r.y[di] /glL) * resize;
+        dz = (r.z[di] /glL) * resize;
+        // dx = (rxyz[di + 0] / glL) * resize;
+        // dy = (rxyz[di + 1] / glL) * resize;
+        // dz = (rxyz[di + 2] / glL) * resize;
 
         glColor3d(0.0, 1.0, 0.0);
         glVertex3d(dx, dy, dz);
@@ -138,9 +146,9 @@ static void idle_func(void)
         Etail = tail * (float)N;
         Ptail = tail * Rho;
 
-        init_pos(rxyz, Rho);
-        init_vel(vxyz, &Temp, &Ekin);
-        forces(rxyz, fxyz, &Epot, &Pres, &Temp, Rho, V, box_size);
+        init_pos(&r, Rho);
+        init_vel(&v, &Temp, &Ekin);
+        forces(&r, &f, &Epot, &Pres, &Temp, Rho, V, box_size);
 
         switcher = 0;
 
@@ -160,11 +168,13 @@ static void idle_func(void)
         Ptail = tail * Rho;
 
         sf = cbrt(Rhob / Rho);
-        for (int k = 0; k < 3 * N; k++) { // reescaleo posiciones a nueva densidad
-            rxyz[k] *= sf;
+        for (int k = 0; k < N; k++) { // reescaleo posiciones a nueva densidad
+            r.x[k] *= sf;
+            r.y[k] *= sf;
+            r.z[k] *= sf;
         }
-        init_vel(vxyz, &Temp, &Ekin);
-        forces(rxyz, fxyz, &Epot, &Pres, &Temp, Rho, V, box_size);
+        init_vel(&v, &Temp, &Ekin);
+        forces(&r, &f, &Epot, &Pres, &Temp, Rho, V, box_size);
 
         switcher = 0;
         if (fabs(Rho - (RHOI - 0.9f)) < 1e-6) {
@@ -176,12 +186,14 @@ static void idle_func(void)
 
         for (int i = frames; i < frames + TMES; i++) {
 
-            velocity_verlet(rxyz, vxyz, fxyz, &Epot, &Ekin, &Pres, &Temp, Rho,
+            velocity_verlet(&r, &v, &f, &Epot, &Ekin, &Pres, &Temp, Rho,
                             V, box_size);
 
             sf = sqrt(T0 / Temp);
-            for (int k = 0; k < 3 * N; k++) { // reescaleo de velocidades
-                vxyz[k] *= sf;
+            for (int k = 0; k < N; k++) { // reescaleo de velocidades
+                v.vx[k] *= sf;
+                v.vy[k] *= sf;
+                v.vz[k] *= sf;
             }
         }
 
@@ -201,12 +213,14 @@ static void idle_func(void)
 
         while (frames % TEQ != 0) {
 
-            velocity_verlet(rxyz, vxyz, fxyz, &Epot, &Ekin, &Pres, &Temp, Rho,
+            velocity_verlet(&r, &v, &f, &Epot, &Ekin, &Pres, &Temp, Rho,
                             V, box_size);
 
             sf = sqrt(T0 / Temp);
             for (int k = 0; k < 3 * N; k++) { // reescaleo de velocidades
-                vxyz[k] *= sf;
+                v.vx[k] *= sf;
+                v.vy[k] *= sf;
+                v.vz[k] *= sf;
             }
 
             frames++;
@@ -257,6 +271,42 @@ static void open_glut_window(void)
 }
 
 
+// Función auxiliar para alocar memoria alineada
+void allocate_memory(Positions* __restrict__ r, Velocities* __restrict__ v, Forces* __restrict__ f) {
+    // Posiciones
+    if (posix_memalign((void**)&r->x, 32, N * sizeof(float)) ||
+        posix_memalign((void**)&r->y, 32, N * sizeof(float)) ||
+        posix_memalign((void**)&r->z, 32, N * sizeof(float))) {
+        fprintf(stderr, "Error: Memory allocation failed for positions\n");
+        exit(1);
+    }
+    
+    // Velocidades
+    if (posix_memalign((void**)&v->vx, 32, N * sizeof(float)) ||
+        posix_memalign((void**)&v->vy, 32, N * sizeof(float)) ||
+        posix_memalign((void**)&v->vz, 32, N * sizeof(float))) {
+        fprintf(stderr, "Error: Memory allocation failed for velocities\n");
+        exit(1);
+    }
+    
+    // Fuerzas
+    if (posix_memalign((void**)&f->fx, 32, N * sizeof(float)) ||
+        posix_memalign((void**)&f->fy, 32, N * sizeof(float)) ||
+        posix_memalign((void**)&f->fz, 32, N * sizeof(float))) {
+        fprintf(stderr, "Error: Memory allocation failed for forces\n");
+        exit(1);
+    }
+}
+
+
+// Función auxiliar para liberar memoria
+void free_memory(Positions* __restrict__ r, Velocities* __restrict__ v, Forces* __restrict__ f) {
+    free(r->x); free(r->y); free(r->z);
+    free(v->vx); free(v->vy); free(v->vz);
+    free(f->fx); free(f->fy); free(f->fz);
+}
+
+
 // viz main
 
 int main(int argc, char** argv)
@@ -264,9 +314,7 @@ int main(int argc, char** argv)
 
     glutInit(&argc, argv);
 
-    rxyz = (float*)malloc(3 * N * sizeof(float));
-    vxyz = (float*)malloc(3 * N * sizeof(float));
-    fxyz = (float*)malloc(3 * N * sizeof(float));
+    allocate_memory(&r, &v, &f);
 
     // parametros iniciales para que los pueda usar (antes de modificar)
     // `idle_func`
@@ -279,9 +327,9 @@ int main(int argc, char** argv)
     Etail = tail * (float)N;
     Ptail = tail * Rho;
 
-    init_pos(rxyz, Rho);
-    init_vel(vxyz, &Temp, &Ekin);
-    forces(rxyz, fxyz, &Epot, &Pres, &Temp, Rho, V, box_size);
+    init_pos(&r, Rho);
+    init_vel(&v, &Temp, &Ekin);
+    forces(&r, &f, &Epot, &Pres, &Temp, Rho, V, box_size);
     //
     //
 
@@ -295,10 +343,7 @@ int main(int argc, char** argv)
 
     glutMainLoop();
 
-    // Liberacion de memoria
-    free(rxyz);
-    free(fxyz);
-    free(vxyz);
+    free_memory(&r, &v, &f);
 
     exit(0);
 }

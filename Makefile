@@ -12,7 +12,7 @@ viz: viz.o $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -lGL -lGLU -lglut
 
 tiny_md: tiny_md.o $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -fopenmp
 
 %.o: %.c
 	$(CC) $(WFLAGS) $(CPPFLAGS) $(CFLAGS) -c $<

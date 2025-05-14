@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <immintrin.h>
 #include "core.h"
+#include <omp.h>
 
 // Función auxiliar para reescalar velocidades optimizada
 #pragma GCC optimize("tree-vectorize")

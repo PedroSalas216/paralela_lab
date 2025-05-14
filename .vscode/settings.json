@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "parameters.h": "c"
+        "parameters.h": "c",
+        "core.h": "c"
     }
 }
