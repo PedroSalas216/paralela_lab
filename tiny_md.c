@@ -66,6 +66,13 @@ void free_memory(Positions* __restrict__ r, Velocities* __restrict__ v, Forces* 
 
 int main()
 {
+    //control de threads
+    int desired_threads = 16;
+    int max_threads = omp_get_max_threads();
+    int numthreads = desired_threads >= max_threads ? max_threads : desired_threads;
+    omp_set_num_threads(numthreads);
+    printf("# Usando %d hilos\n\n", numthreads);
+    
     FILE *file_xyz, *file_thermo;
     file_xyz = fopen("trajectory.xyz", "w");
     file_thermo = fopen("thermo.log", "w");
