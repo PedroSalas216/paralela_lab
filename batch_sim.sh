@@ -32,19 +32,22 @@ simulate (){
 
 # # 4000 2916 2948 1372 ( 864 500 256 108)
 declare -A vals_n
-vals_n["108"]="2"
-vals_n["256"]="2"
-vals_n["500"]="2"
-vals_n["864"]="2"
+vals_n["108"]="0"
+vals_n["256"]="0"
+vals_n["500"]="0"
+vals_n["864"]="0"
 vals_n["1372"]="0"
 vals_n["2048"]="0"
-vals_n["2916"]="1"
+vals_n["2916"]="4"
 vals_n["4000"]="0"
 vals_n["5324"]="0"
 
 # ==== aca configura cada simulacion ==== 
 
-simd_flags="-O3 -march=native -mavx2 -mfma -ftree-vectorize -ffast-math -funroll-loops -fomit-frame-pointer -fno-math-errno -fno-signed-zeros -fno-trapping-math -ffinite-math-only -fopenmp-simd"
+# simd_flags="-O3 -march=native -mavx2 -mfma -ftree-vectorize -ffast-math -funroll-loops -fomit-frame-pointer -fno-math-errno -fno-signed-zeros -fno-trapping-math -ffinite-math-only -fopenmp-simd"
+
+
+simd_flags="-O3 -march=native -mavx2 -mfma -ftree-vectorize -ffast-math -funroll-loops -fomit-frame-pointer -fno-math-errno -fno-signed-zeros -fno-trapping-math -ffinite-math-only -fopenmp"
 
 simulate gcc "$simd_flags"
 
