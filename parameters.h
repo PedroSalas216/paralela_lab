@@ -32,6 +32,10 @@
 #define RCUT 2.5
 #endif
 
+#ifndef ECUT
+#define ECUT (4.0 * (pow(RCUT, -12) - pow(RCUT, -6)))
+#endif // !ECUT
+
 #ifndef DT // paso temporal ~ 1.6 fs para el Ar
 #define DT 0.005
 #endif

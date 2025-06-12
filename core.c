@@ -4,9 +4,7 @@
 #include <math.h>
 #include "parameters.h"
 #include <stdlib.h>
-#include <omp.h>
-
-#define ECUT (4.0 * (pow(RCUT, -12) - pow(RCUT, -6)))
+#include "gpu_core.h"
 
 
 void init_pos(Positions* r, const float rho)
@@ -75,85 +73,11 @@ void init_vel(Velocities* v, float* temp, float* ekin)
     }
 }
 
-#pragma GCC optimize("tree-vectorize")
-static inline float minimum_image(float cordi, const float cell_length)
-{
-    const float half_cell_length = 0.5 * cell_length;
-    cordi -= cell_length * (cordi > half_cell_length);
-    cordi += cell_length * (cordi <= -half_cell_length);
-    return cordi;
-}
 
-#pragma GCC optimize("tree-vectorize")
 void forces(const Positions* __restrict__ r, Forces* __restrict__ f, float* __restrict__ epot, float* __restrict__ pres, 
             const float* __restrict__ temp, const float rho, const float V, const float L)
 {
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++) {
-        f->fx[i] = 0.0f;
-        f->fy[i] = 0.0f;
-        f->fz[i] = 0.0f;
-    }
-
-    float pres_vir = 0.0f;
-    float epot_local = 0.0f;
-    const float rcut2 = RCUT * RCUT;
-    // *epot = 0.0f;
-
-    #pragma omp parallel reduction(+:epot_local, pres_vir)
-    {
-        #pragma omp for schedule(dynamic, 16)
-        for (int i = 0; i < N-1; i++) {
-            float xi = r->x[i];
-            float yi = r->y[i];
-            float zi = r->z[i];
-            float fxi = 0.0f;
-            float fyi = 0.0f;
-            float fzi = 0.0f;
-
-            for (int j = i + 1; j < N; j++) {
-                float rx = xi - r->x[j];
-                float ry = yi - r->y[j];
-                float rz = zi - r->z[j];
-
-                rx = minimum_image(rx, L);
-                ry = minimum_image(ry, L);
-                rz = minimum_image(rz, L);
-
-                float rij2 = rx * rx + ry * ry + rz * rz;
-
-                if (rij2 <= rcut2) {
-                    float r2inv = 1.0f / rij2;
-                    float r6inv = r2inv * r2inv * r2inv;
-                    float fr = 24.0f * r2inv * r6inv * (2.0f * r6inv - 1.0f);
-
-                    fxi += fr * rx;
-                    fyi += fr * ry;
-                    fzi += fr * rz;
-
-                    #pragma omp atomic
-                    f->fx[j] -= fr * rx;
-                    #pragma omp atomic
-                    f->fy[j] -= fr * ry;
-                    #pragma omp atomic
-                    f->fz[j] -= fr * rz;
-
-                    epot_local += 4.0f * r6inv * (r6inv - 1.0f) - ECUT;
-                    pres_vir += fr * rij2;
-                }
-            }
-            #pragma omp atomic
-            f->fx[i] += fxi;
-            #pragma omp atomic
-            f->fy[i] += fyi;
-            #pragma omp atomic
-            f->fz[i] += fzi;
-        }
-    }
-
-    *epot = epot_local;
-    pres_vir /= (V * 3.0f);
-    *pres = *temp * rho + pres_vir;
+    gpu_compute_forces(r->x, r->y, r->z, f->fx, f->fy, f->fz, epot, pres, *temp, rho, V, L);
 }
 
 static float pbc(float cordi, const float cell_length)
@@ -165,7 +89,7 @@ static float pbc(float cordi, const float cell_length)
     }
     return cordi;
 }
-#pragma GCC optimize("tree-vectorize")
+
 void velocity_verlet(Positions* __restrict__ r, Velocities* __restrict__ v, 
                     Forces* __restrict__ f, float* __restrict__ epot, 
                     float* __restrict__ ekin, float* __restrict__ pres, 

@@ -6,12 +6,9 @@
 #include <stdlib.h>
 #include <immintrin.h>
 #include "core.h"
-#include <omp.h>
-
+#include "gpu_core.h"
 // Función auxiliar para reescalar velocidades optimizada
-#pragma GCC optimize("tree-vectorize")
 void scale_velocities(Velocities* __restrict__ v, const float sf) {
-    #pragma GCC ivdep
     for (int i = 0; i < N; i++) {
         v->vx[i] *= sf;
         v->vy[i] *= sf;
@@ -20,9 +17,7 @@ void scale_velocities(Velocities* __restrict__ v, const float sf) {
 }
 
 // Función auxiliar para reescalar posiciones optimizada
-#pragma GCC optimize("tree-vectorize")
 void scale_positions(Positions* __restrict__ r, const float sf) {
-    #pragma GCC ivdep
     for (int i = 0; i < N; i++) {
         r->x[i] *= sf;
         r->y[i] *= sf;
@@ -66,12 +61,6 @@ void free_memory(Positions* __restrict__ r, Velocities* __restrict__ v, Forces* 
 
 int main()
 {
-    //control de threads
-    int desired_threads = 16;
-    int max_threads = omp_get_max_threads();
-    int numthreads = desired_threads >= max_threads ? max_threads : desired_threads;
-    omp_set_num_threads(numthreads);
-    printf("# Usando %d hilos\n\n", numthreads);
     
     FILE *file_xyz, *file_thermo;
     file_xyz = fopen("trajectory.xyz", "w");
@@ -93,6 +82,10 @@ int main()
     // Alocación de memoria
     allocate_memory(&r, &v, &f);
 
+    // Inicialización cuda 
+    gpu_init();
+
+
     printf("# Número de partículas:      %d\n", N);
     printf("# Temperatura de referencia: %.2f\n", T0);
     printf("# Pasos de equilibración:    %d\n", TEQ);
@@ -107,8 +100,7 @@ int main()
     Rho = RHOI;
     init_pos(&r, Rho);
     float start = wtime();
-    
-    #pragma GCC ivdep
+
     for (int m = 0; m < 9; m++) {
         Rhob = Rho;
         Rho = RHOI - 0.1f * (float)m;
@@ -125,7 +117,6 @@ int main()
         forces(&r, &f, &Epot, &Pres, &Temp, Rho, cell_V, cell_L);
 
         // Loop de equilibración
-        #pragma GCC ivdep
         for (int i = 1; i < TEQ; i++) {
             velocity_verlet(&r, &v, &f, &Epot, &Ekin, &Pres, &Temp, Rho, cell_V, cell_L);
             sf = sqrtf(T0 / Temp);
@@ -136,7 +127,6 @@ int main()
         int mes = 0;
         float epotm = 0.0f, presm = 0.0f;
         
-        #pragma GCC ivdep
         for (int i = TEQ; i < TRUN; i++) {
             velocity_verlet(&r, &v, &f, &Epot, &Ekin, &Pres, &Temp, Rho, cell_V, cell_L);
             
@@ -155,7 +145,6 @@ int main()
                        t, Temp, pres_with_tail, epot_with_tail, epot_with_tail + Ekin);
                 
                 fprintf(file_xyz, "%d\n\n", N);
-                #pragma GCC ivdep
                 for (int k = 0; k < N; k++) {
                     fprintf(file_xyz, "Ar %e %e %e\n", r.x[k], r.y[k], r.z[k]);
                 }
@@ -171,9 +160,13 @@ int main()
     printf("# Tiempo simulado = %f [fs]\n", t * 1.6f);
     printf("prueba de metrica: %f\n", (float)N * N / elapsed);
 
+    // Cierre CUDA
+    gpu_free();
+
     fclose(file_thermo);
     fclose(file_xyz);
     free_memory(&r, &v, &f);
+    
     
     return 0;
 }
