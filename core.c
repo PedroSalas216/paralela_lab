@@ -74,10 +74,11 @@ void init_vel(Velocities* v, float* temp, float* ekin)
 }
 
 
-void forces(const Positions* __restrict__ r, Forces* __restrict__ f, float* __restrict__ epot, float* __restrict__ pres, 
+void forces(const Positions* __restrict__ r, Forces* __restrict__ f, float* __restrict__ epot, float* __restrict__ pres,
             const float* __restrict__ temp, const float rho, const float V, const float L)
 {
-    gpu_compute_forces(r->x, r->y, r->z, f->fx, f->fy, f->fz, epot, pres, *temp, rho, V, L);
+    gpu_compute_forces(r->x, r->y, r->z, *temp, rho, V, L);
+    gpu_get_forces(f->fx, f->fy, f->fz, epot, pres);
 }
 
 static float pbc(float cordi, const float cell_length)

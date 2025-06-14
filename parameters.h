@@ -32,6 +32,10 @@
 #define RCUT 2.5
 #endif
 
+#ifndef RCUT2 // radio de corte
+#define RCUT2 (RCUT*RCUT)
+#endif
+
 #ifndef ECUT
 #define ECUT (4.0 * (pow(RCUT, -12) - pow(RCUT, -6)))
 #endif // !ECUT
